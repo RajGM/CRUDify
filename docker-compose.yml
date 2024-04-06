@@ -10,6 +10,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
 
   node-app:
     build:
@@ -21,11 +22,24 @@ services:
       DB_PASSWORD: password
       DB_NAME: mydatabase
     ports:
-      - "3000:3000"
+      - "3001:3001"
     depends_on:
       - postgres
     volumes:
       - ./node:/usr/src/app  
+
+  frontend:
+    build:
+      context: ./frontend
+    volumes:
+      - ./frontend:/usr/src/app
+      - /usr/src/app/.next
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+    depends_on:
+      - node-app
 
 volumes:
   postgres-data:

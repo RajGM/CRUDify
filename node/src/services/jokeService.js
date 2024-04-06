@@ -18,9 +18,8 @@ const updateJoke = async (jokeID, joke, username) => {
   return await jokeModel.updateJoke(jokeID, joke);
 };
 
-const deleteJoke = async (jokeID, username) => {
-  // Check ownership and other business rules
-  return await jokeModel.deleteJoke(jokeID);
+const deleteJoke = async (jokeID, userEmail) => {
+  return await jokeModel.deleteJoke(jokeID, userEmail);
 };
 
 module.exports = {

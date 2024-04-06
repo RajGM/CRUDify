@@ -14,7 +14,7 @@ RUN npm install
 COPY . .
 
 # Expose port 3000 to be accessible from the host
-EXPOSE 3000
+EXPOSE 3001
 
 # Command to run the application
-CMD ["node", "server.js"]
+CMD ["nodemon", "server.js"]

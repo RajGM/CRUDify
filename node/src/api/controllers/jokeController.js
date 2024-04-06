@@ -41,6 +41,12 @@ const deleteJoke = async (req, res) => {
     await jokeService.deleteJoke(req.params.jokeID, req.user.email);
     res.status(204).send();
   } catch (error) {
+    if (error.message === 'Joke not found') {
+      return res.status(404).send({ message: error.message });
+    }
+    if (error.message === 'User is not the owner of the joke') {
+      return res.status(403).send({ message: error.message });
+    }
     res.status(500).json({ message: error.message });
   }
 };
