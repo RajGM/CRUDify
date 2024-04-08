@@ -5,8 +5,7 @@ exports.checkAuth = async (req, res, next) => {
         const token = req.headers.authorization.split('Bearer ')[1];
         const decodedToken = await admin.auth().verifyIdToken(token);
         req.user = decodedToken;
-        console.log("deleted token:", decodedToken)
-        req.user = { email: userRecord.email, uid: uid };
+        req.user = { email: decodedToken.email, uid: decodedToken.uid };
         next();
     } catch (error) {
         res.status(401).json({ message: 'Unauthorized' });

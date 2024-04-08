@@ -1,44 +1,54 @@
-"use client"
+"use client";
 import React, { useEffect, useState } from 'react';
 import { getAuth } from 'firebase/auth';
-import AuthForm from './AuthForm'; // Assume this is the utility function or integrate it directly
-import app from '../utils/firebase'; // Adjust the import path based on your file structure
-import GetUserToken from './GetUserToken'; // Assume this is the utility function or integrate it directly
-import GetJokesByUserName from './GetJokesByUserName';
+import app from '../utils/firebase';
+import GetUserToken from './GetUserToken';
+import AuthForm from './AuthForm';
 import PostJoke from './PostJoke';
 import GetAllJokes from './GetAllJokes';
+import { useAtom } from 'jotai';
+import { userAtom, tokenAtom, isLoggedInAtom } from '../context/userAtoms';
 
 const ClientSideComponent = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [token, setToken] = useState(null);
+  const [user, setUser] = useAtom(userAtom);
+  const [token, setToken] = useAtom(tokenAtom);
+  const [isLoggedIn] = useAtom(isLoggedInAtom);
   const auth = getAuth(app);
-  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        setIsLoggedIn(true);
-        setUser(user)
-        const token = await GetUserToken();
-        setToken(token);
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      if (firebaseUser) {
+        const token = await GetUserToken(); // Ensure this function is implemented to get the token
+        setUser(firebaseUser); // Update the atom instead of local state
+        setToken(token); // Update the atom instead of local state
       } else {
-        setIsLoggedIn(false);
+        setUser(null);
         setToken(null);
       }
     });
-  }, [auth]);
+
+    return () => unsubscribe(); // Cleanup subscription
+  }, [setUser, setToken]);
 
   return (
     <div>
-      {isLoggedIn && token ? (
+      {isLoggedIn ? (
         <>
-          <GetJokesByUserName token={token} />
           <PostJoke token={token} />
+          <div className="text-center mt-4"> {/* Center the button */}
+            <button
+              onClick={() => { setUser(null); setToken(null); }}
+              disabled={isLoading}
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:bg-blue-300">
+              Logout
+            </button>
+          </div>
+          <GetAllJokes user={user} />
         </>
       ) : (
         <AuthForm />
       )}
-      <GetAllJokes user={user}/>
     </div>
   );
 };

@@ -6,8 +6,11 @@ const GetAllJokes = ({ user }) => {
   const [editJokeId, setEditJokeId] = useState(null);
   const [editedJoke, setEditedJoke] = useState('');
 
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [updateError, setUpdateError] = useState('');
+
   useEffect(() => {
-    
+
   }, [jokes]);
 
   const fetchAllJokes = async () => {
@@ -19,10 +22,8 @@ const GetAllJokes = ({ user }) => {
 
   const handleDelete = async (jokeId) => {
     const apiUrl = getApiUrl();
-    const token = user?user.accessToken:null;
+    const token = user ? user.accessToken : null;
 
-    console.log('Deleting joke with id:', jokeId);
-  
     try {
       const response = await fetch(`${apiUrl}/api/jokes/${jokeId}`, {
         method: 'DELETE',
@@ -32,9 +33,9 @@ const GetAllJokes = ({ user }) => {
           'Authorization': `Bearer ${token}`,
         },
       });
-  
+
       if (response.ok) {
-        console.log('Joke deleted successfully');
+        setJokes(jokes.filter(joke => joke.jokeid !== jokeId));
         // Optionally, refetch jokes or remove the deleted joke from the local state to update the UI
         // fetchAllJokes(); or update state directly
       } else {
@@ -45,7 +46,6 @@ const GetAllJokes = ({ user }) => {
       console.error('Error deleting joke:', error);
     }
   };
-  
 
   const handleEdit = (joke) => {
     setEditJokeId(joke.jokeid);
@@ -53,14 +53,45 @@ const GetAllJokes = ({ user }) => {
   };
 
   const handleUpdate = async (jokeId) => {
-    // Example API call to update a joke
-    console.log('Updating joke with id:', jokeId, ' to: ', editedJoke);
-    setEditJokeId(null);
-    // After updating, refetch jokes or update state locally
+    const apiUrl = getApiUrl();
+    const token = user ? user.accessToken : null; // Ensure you're handling the token securely
+    const updatedJokeContent = { joke: editedJoke }; // Construct the joke object to be sent
+
+    setIsUpdating(true);
+    setUpdateError('');
+
+    try {
+      const response = await fetch(`${apiUrl}/api/jokes/${jokeId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(updatedJokeContent),
+      });
+
+      if (!response.ok) {
+        const errorMessage = await response.text();
+        throw new Error(errorMessage || 'Failed to update the joke');
+      }
+
+      // Assuming the response includes the updated joke data
+      const updatedJoke = await response.json();
+      
+      // Update the joke in the local state
+      setJokes(jokes.map(joke => joke.jokeid === jokeId ? updatedJoke : joke));
+
+    } catch (error) {
+      console.error('Error updating joke:', error);
+      setUpdateError(error.message);
+    } finally {
+      setIsUpdating(false);
+      setEditJokeId(null); // Reset edit state regardless of the operation's outcome
+    }
   };
 
   return (
-    <div>
+    <div className='flex flex-col items-center justify-center'>
       <button onClick={fetchAllJokes} className="my-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
         Get All Jokes
       </button>
@@ -77,46 +108,51 @@ const GetAllJokes = ({ user }) => {
               </tr>
             </thead>
             <tbody>
-            {jokes.map((joke) => (
-  <tr key={joke.jokeid} className="bg-gray-100 border-b">
-    <td className="px-4 py-2 text-black">{joke.jokeid}</td>
-    <td className="px-4 py-2 text-black">{joke.postedby}</td>
-    <td className="px-4 py-2 text-black">{new Date(joke.timestamp).toLocaleString()}</td>
-    <td className="px-4 py-2 text-black">
-      {editJokeId === joke.jokeid ? (
-        <input
-          type="text"
-          value={editedJoke}
-          onChange={(e) => setEditedJoke(e.target.value)}
-          className="text-gray-700 w-full" // For input, you might keep it gray or change to text-black as needed
-        />
-      ) : (
-        joke.joke
-      )}
-    </td>
-    <td className="px-4 py-2">
-      {user && user.email === joke.postedby && (
-        <>
-          {editJokeId === joke.jokeid ? (
-            <button onClick={() => handleUpdate(joke.jokeid)} className="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-2 rounded">
-              Save
-            </button>
-          ) : (
-            <>
-              <button onClick={() => handleEdit(joke)} className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-1 px-2 rounded">
-                Edit
-              </button>
-              <button onClick={() => handleDelete(joke.jokeid)} className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded ml-2">
-                Delete
-              </button>
-            </>
-          )}
-        </>
-      )}
-    </td>
-  </tr>
-))}
-
+              {jokes.map((joke) => (
+                <tr key={joke.jokeid} className="bg-gray-100 border-b">
+                  <td className="px-4 py-2 text-black">{joke.jokeid}</td>
+                  <td className="px-4 py-2 text-black">{joke.postedby}</td>
+                  <td className="px-4 py-2 text-black">{new Date(joke.timestamp).toLocaleString()}</td>
+                  <td className="px-4 py-2 text-black">
+                    {editJokeId === joke.jokeid ? (
+                      <>
+                        <input
+                          type="text"
+                          value={editedJoke}
+                          onChange={(e) => setEditedJoke(e.target.value)}
+                          className="text-gray-700 w-full"
+                        />
+                        {updateError && <p className="text-red-500">{updateError}</p>}
+                        {isUpdating ? (
+                          <p>Updating joke...</p>
+                        ) : (
+                          <button onClick={() => handleUpdate(joke.jokeid)} className="bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-2 rounded">
+                            Save
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      joke.joke
+                    )}
+                  </td>
+                  <td className="px-4 py-2">
+                    {user && user.email === joke.postedby && (
+                      <>
+                        {!isUpdating && editJokeId !== joke.jokeid && (
+                          <>
+                            <button onClick={() => handleEdit(joke)} className="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-1 px-2 rounded">
+                              Edit
+                            </button>
+                            <button onClick={() => handleDelete(joke.jokeid)} className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded ml-2">
+                              Delete
+                            </button>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

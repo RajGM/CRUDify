@@ -9,15 +9,6 @@ const getAllJokes = async (req, res) => {
   }
 };
 
-const getJokesByUsername = async (req, res) => {
-  try {
-    const jokes = await jokeService.getJokesByUsername(req.params.username);
-    res.json(jokes);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
 const postJoke = async (req, res) => {
   try {
     const joke = await jokeService.createJoke(req.body.joke, req.user.email); // Assuming req.user is set by auth middleware
@@ -29,10 +20,17 @@ const postJoke = async (req, res) => {
 
 const updateJoke = async (req, res) => {
   try {
-    const joke = await jokeService.updateJoke(req.params.jokeID, req.body.joke, req.user.email);
-    res.json(joke);
+    const updatedJoke = await jokeService.updateJoke(req.params.jokeID, req.body.joke, req.user.email);
+    res.json(updatedJoke);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("Error in updateJoke:", error); // For backend logging
+    if (error.message === 'Joke not found') {
+      return res.status(404).json({ message: error.message });
+    } else if (error.message === 'Unauthorized: User does not own the joke') {
+      return res.status(403).json({ message: error.message });
+    } else {
+      res.status(500).json({ message: 'An unexpected error occurred' });
+    }
   }
 };
 
@@ -53,7 +51,6 @@ const deleteJoke = async (req, res) => {
 
 module.exports = {
   getAllJokes,
-  getJokesByUsername,
   postJoke,
   updateJoke,
   deleteJoke,

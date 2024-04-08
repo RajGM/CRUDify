@@ -17,13 +17,11 @@ const AuthForm = () => {
             if (isLogin) {
                 // Login logic
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                console.log(userCredential);
                 // Assuming your token is in userCredential.user.accessToken
                 localStorage.setItem('token', userCredential.user.accessToken);
             } else {
                 // Registration logic
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                console.log(userCredential);
                 // Firebase automatically logs the user in after registration
                 localStorage.setItem('token', userCredential.user.accessToken);
             }
