@@ -1,4 +1,4 @@
-# Project Name
+# CRUDify
 
 This is a Docker Compose setup for a project that includes a PostgreSQL database, a Node.js application, and a frontend application.
 
